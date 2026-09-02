@@ -193,7 +193,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
             caption=_["stream_1"].format(f"https://t.me/{app.username}?start=info_{videoid}", title[:23], duration, user),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        db[chat_id][0]["mystic"] = run
+        if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "tg"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
@@ -218,7 +220,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
             caption=_["stream_1"].format(f"https://t.me/{app.username}?start=info_{videoid}", title[:23], duration, user),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        db[chat_id][0]["mystic"] = run
+        if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "stream"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
         await mystic.delete()
@@ -234,7 +238,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
             caption=_["stream_2"].format(user),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        db[chat_id][0]["mystic"] = run
+        if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "tg"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
@@ -257,7 +263,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
                 caption=_["stream_1"].format(SUPPORT_CHAT, title[:23], duration, user),
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
-            db[chat_id][0]["mystic"] = run
+            if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "tg"
         elif videoid == "soundcloud":
             buttons = stream_markup(_, chat_id)
@@ -266,7 +274,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
                 caption=_["stream_1"].format(SUPPORT_CHAT, title[:23], duration, user),
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
-            db[chat_id][0]["mystic"] = run
+            if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "tg"
         else:
             buttons = stream_markup(_, chat_id)
@@ -276,7 +286,9 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
                 caption=_["stream_1"].format(f"https://t.me/{app.username}?start=info_{videoid}", title[:23], duration, user),
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
-            db[chat_id][0]["mystic"] = run
+            if not db.get(chat_id):
+    return
+db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "stream"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
