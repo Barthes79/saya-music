@@ -69,7 +69,7 @@ async def manage_callback(client, callback: CallbackQuery, _):
     if not await is_active_chat(chat_id):
         return await callback.answer(_["general_5"], show_alert=True)
     user_mention = callback.from_user.mention
-    
+
     if command == "Pause":
         if not await is_music_playing(chat_id):
             return await callback.answer(_["admin_1"], show_alert=True)
@@ -194,8 +194,8 @@ async def handle_skip_replay(callback: CallbackQuery, _, chat_id: int, command: 
             reply_markup=InlineKeyboardMarkup(buttons)
         )
         if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+            return
+        db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "tg"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
@@ -221,8 +221,8 @@ db[chat_id][0]["mystic"] = run
             reply_markup=InlineKeyboardMarkup(buttons)
         )
         if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+            return
+        db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "stream"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
         await mystic.delete()
@@ -239,8 +239,8 @@ db[chat_id][0]["mystic"] = run
             reply_markup=InlineKeyboardMarkup(buttons)
         )
         if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+            return
+        db[chat_id][0]["mystic"] = run
         db[chat_id][0]["markup"] = "tg"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
@@ -264,8 +264,8 @@ db[chat_id][0]["mystic"] = run
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
             if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+                return
+            db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "tg"
         elif videoid == "soundcloud":
             buttons = stream_markup(_, chat_id)
@@ -275,8 +275,8 @@ db[chat_id][0]["mystic"] = run
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
             if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+                return
+            db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "tg"
         else:
             buttons = stream_markup(_, chat_id)
@@ -287,8 +287,8 @@ db[chat_id][0]["mystic"] = run
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
             if not db.get(chat_id):
-    return
-db[chat_id][0]["mystic"] = run
+                return
+            db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "stream"
         await callback.edit_message_text(text_msg, reply_markup=close_markup(_))
 
