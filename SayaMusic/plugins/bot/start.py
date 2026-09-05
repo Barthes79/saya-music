@@ -72,7 +72,7 @@ async def start_pm(client, message: Message, _):
             return
 
         if name.startswith("inf"):
-            m = await message.reply_text("")
+            m = await message.reply_text("🔎")
             try:
                 vid_id = str(name).replace("info_", "", 1)
                 query = f"https://www.youtube.com/watch?v={vid_id}"
