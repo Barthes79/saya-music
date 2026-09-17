@@ -48,13 +48,18 @@ def generate_progress_bar(played_sec, duration_sec):
 
 
 def control_buttons(_, chat_id):
-    return [[
-        InlineKeyboardButton(text="Resume", callback_data=f"stream_admin Resume|{chat_id}"),
-        InlineKeyboardButton(text="Pause", callback_data=f"stream_admin Pause|{chat_id}"),
-        InlineKeyboardButton(text="Replay", callback_data=f"stream_admin Replay|{chat_id}"),
-        InlineKeyboardButton(text="Skip", callback_data=f"stream_admin Skip|{chat_id}"),
-        InlineKeyboardButton(text="Stop", callback_data=f"stream_admin Stop|{chat_id}"),
-    ]]
+    return [
+        [
+            InlineKeyboardButton(text="Resume", callback_data=f"stream_admin Resume|{chat_id}"),
+            InlineKeyboardButton(text="Pause", callback_data=f"stream_admin Pause|{chat_id}"),
+            InlineKeyboardButton(text="Replay", callback_data=f"stream_admin Replay|{chat_id}"),
+            InlineKeyboardButton(text="Skip", callback_data=f"stream_admin Skip|{chat_id}"),
+            InlineKeyboardButton(text="Stop", callback_data=f"stream_admin Stop|{chat_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="⬇️ دانلود", callback_data=f"get_song {chat_id}"),
+        ],
+    ]
 
 
 def stream_markup_timer(_, chat_id, played, dur):
