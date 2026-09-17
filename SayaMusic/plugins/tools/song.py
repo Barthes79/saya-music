@@ -26,6 +26,26 @@ def _cookiefile():
     return None
 
 
+# روی هر کانتینر لینوکسی (Railway هم همین‌طوره) مسیر /dev/shm یک فضای در حافظه‌ی
+# RAM هست، نه دیسک واقعی. اگه در دسترس و قابل نوشتن باشه، فایل موقت دانلود رو
+# همون‌جا می‌سازیم تا هیچ‌وقت واقعاً روی Storage کانتینر ننشینه؛ در غیر این
+# صورت (مثلاً روی هاست‌هایی که /dev/shm ندارن) به همون فولدر معمولی برمی‌گردیم.
+def _pick_tmp_dir() -> str:
+    shm = "/dev/shm/saya_dl"
+    try:
+        os.makedirs(shm, exist_ok=True)
+        test_file = os.path.join(shm, ".write_test")
+        with open(test_file, "w") as f:
+            f.write("ok")
+        os.remove(test_file)
+        return shm
+    except Exception:
+        return DOWNLOAD_DIR
+
+
+TMP_DIR = _pick_tmp_dir()
+
+
 def _too_long(duration_min: str) -> bool:
     if not duration_min:
         return False
@@ -42,13 +62,13 @@ def _too_long(duration_min: str) -> bool:
 def _cached_path(vidid: str, video: bool):
     suffix = "video" if video else "audio"
     ext = "mp4" if video else "mp3"
-    path = f"{DOWNLOAD_DIR}/dl_{vidid}_{suffix}.{ext}"
+    path = f"{TMP_DIR}/dl_{vidid}_{suffix}.{ext}"
     return path if os.path.exists(path) else None
 
 
 def _download_sync(link: str, vidid: str, video: bool) -> "str | None":
     suffix = "video" if video else "audio"
-    outtmpl = f"{DOWNLOAD_DIR}/dl_%(id)s_{suffix}.%(ext)s"
+    outtmpl = f"{TMP_DIR}/dl_%(id)s_{suffix}.%(ext)s"
 
     if video:
         opts = {
@@ -84,7 +104,7 @@ def _download_sync(link: str, vidid: str, video: bool) -> "str | None":
         return None
 
     ext = "mp4" if video else "mp3"
-    path = f"{DOWNLOAD_DIR}/dl_{vidid}_{suffix}.{ext}"
+    path = f"{TMP_DIR}/dl_{vidid}_{suffix}.{ext}"
     return path if os.path.exists(path) else None
 
 
@@ -122,6 +142,13 @@ async def _send_track(chat_id: int, mystic: Message, vidid: str, title: str, vid
             await app.send_audio(chat_id, path, caption=title, thumb=thumb, title=title)
     except Exception as e:
         return await mystic.edit_text(f"آپلود فایل با خطا مواجه شد: {e}")
+    finally:
+        # فایل روی هارد سرور دیگه لازم نیست؛ تلگرام از همین به بعد خودش نسخه رو نگه می‌داره.
+        # اگه این خط رو حذف کنی، فایل‌ها برای همیشه روی دیسک سرور جمع می‌شن.
+        try:
+            os.remove(path)
+        except Exception:
+            pass
 
     await mystic.delete()
 
