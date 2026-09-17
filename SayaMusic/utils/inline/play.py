@@ -57,7 +57,8 @@ def control_buttons(_, chat_id):
             InlineKeyboardButton(text="Stop", callback_data=f"stream_admin Stop|{chat_id}"),
         ],
         [
-            InlineKeyboardButton(text="⬇️ دانلود", callback_data=f"get_song {chat_id}"),
+            InlineKeyboardButton(text="🎵 دانلود MP3", callback_data=f"get_song {chat_id}|a"),
+            InlineKeyboardButton(text="🎬 دانلود MP4", callback_data=f"get_song {chat_id}|v"),
         ],
     ]
 
