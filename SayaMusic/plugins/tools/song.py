@@ -90,13 +90,17 @@ async def song_download(client, message: Message, _):
     )
 
 
-# دکمه‌ی «دانلود» روی پنل پخش زنده — همون ترکی که الان در حال پخشه رو برای کاربر می‌فرسته
+# دکمه‌های «دانلود MP3» و «دانلود MP4» روی پنل پخش زنده
+# callback_data به این شکل ساخته می‌شه: "get_song {chat_id}|a"  یا  "get_song {chat_id}|v"
 @app.on_callback_query(filters.regex("^get_song") & ~BANNED_USERS)
 @languageCB
 async def get_song_callback(client, callback: CallbackQuery, _):
-    chat_id = int(callback.data.split(None, 1)[1])
-    queue = db.get(chat_id)
+    payload = callback.data.split(None, 1)[1]
+    chat_id_str, _, mode = payload.partition("|")
+    chat_id = int(chat_id_str)
+    video = mode == "v"
 
+    queue = db.get(chat_id)
     if not queue:
         return await callback.answer("در حال حاضر چیزی پخش نمی‌شه.", show_alert=True)
 
@@ -106,7 +110,8 @@ async def get_song_callback(client, callback: CallbackQuery, _):
         return await callback.answer("این مورد قابل دانلود نیست (پخش زنده / فایل تلگرامی).", show_alert=True)
 
     title = current.get("title") or "Track"
-    await callback.answer("در حال دانلود، فایل رو برات می‌فرستم...", show_alert=False)
+    label = "MP4" if video else "MP3"
+    await callback.answer(f"در حال آماده‌سازی {label}، فایل رو برات می‌فرستم...", show_alert=False)
 
-    mystic = await callback.message.reply_text(f"در حال دانلود «{title}»...")
-    await _send_track(callback.message.chat.id, mystic, vidid, vidid, title, video=False)
+    mystic = await callback.message.reply_text(f"در حال دانلود «{title}» ({label})...")
+    await _send_track(callback.message.chat.id, mystic, vidid, vidid, title, video=video)
