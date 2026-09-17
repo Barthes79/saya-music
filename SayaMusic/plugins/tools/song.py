@@ -1,17 +1,29 @@
 # Saya Music
+import asyncio
 import os
 
 from pyrogram import filters
 from pyrogram.errors import FloodWait
 from pyrogram.types import CallbackQuery, Message
+from yt_dlp import YoutubeDL
 
-import config
 from config import BANNED_USERS, SONG_DOWNLOAD_DURATION_LIMIT
 from SayaMusic import YouTube, app
+from SayaMusic.core.dir import DOWNLOAD_DIR
 from SayaMusic.misc import db
+from SayaMusic.utils.cookie_handler import COOKIE_PATH
 from SayaMusic.utils.decorators.language import language, languageCB
-from SayaMusic.utils.formatters import seconds_to_min, time_to_seconds
+from SayaMusic.utils.formatters import time_to_seconds
 from SayaMusic.utils.thumbnails import get_thumb
+
+
+def _cookiefile():
+    try:
+        if COOKIE_PATH and os.path.exists(COOKIE_PATH) and os.path.getsize(COOKIE_PATH) > 0:
+            return str(COOKIE_PATH)
+    except Exception:
+        pass
+    return None
 
 
 def _too_long(duration_min: str) -> bool:
@@ -23,9 +35,70 @@ def _too_long(duration_min: str) -> bool:
         return False
 
 
-async def _send_track(chat_id: int, mystic: Message, link: str, vidid: str, title: str, video: bool):
-    path, _ = await YouTube.download(link, mystic, video=video, videoid=vidid)
-    if not path or not os.path.exists(path):
+# فایل‌های دانلودشده با پیشوند dl_ و پسوند audio/video ذخیره می‌شن؛ این عمداً
+# جدا از کش پخش‌زنده‌ی خود بات (که فقط بر اساس id.ext هست و نوع فایل رو تشخیص
+# نمی‌ده) نگه داشته می‌شه، تا درخواست MP3 هیچ‌وقت یک فایل ویدیویی کش‌شده رو
+# برنگردونه و برعکس.
+def _cached_path(vidid: str, video: bool):
+    suffix = "video" if video else "audio"
+    ext = "mp4" if video else "mp3"
+    path = f"{DOWNLOAD_DIR}/dl_{vidid}_{suffix}.{ext}"
+    return path if os.path.exists(path) else None
+
+
+def _download_sync(link: str, vidid: str, video: bool) -> "str | None":
+    suffix = "video" if video else "audio"
+    outtmpl = f"{DOWNLOAD_DIR}/dl_%(id)s_{suffix}.%(ext)s"
+
+    if video:
+        opts = {
+            "outtmpl": outtmpl,
+            "format": "bv*[ext=mp4][height<=?720]+ba[ext=m4a]/b[ext=mp4]/best",
+            "merge_output_format": "mp4",
+        }
+    else:
+        opts = {
+            "outtmpl": outtmpl,
+            "format": "bestaudio/best",
+            "postprocessors": [
+                {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}
+            ],
+        }
+
+    opts.update(
+        {
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            "overwrites": False,
+            "retries": 2,
+        }
+    )
+    if cookiefile := _cookiefile():
+        opts["cookiefile"] = cookiefile
+
+    try:
+        with YoutubeDL(opts) as ydl:
+            ydl.extract_info(link, download=True)
+    except Exception:
+        return None
+
+    ext = "mp4" if video else "mp3"
+    path = f"{DOWNLOAD_DIR}/dl_{vidid}_{suffix}.{ext}"
+    return path if os.path.exists(path) else None
+
+
+async def _get_file(vidid: str, video: bool) -> "str | None":
+    if cached := _cached_path(vidid, video):
+        return cached
+    link = f"https://www.youtube.com/watch?v={vidid}"
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _download_sync, link, vidid, video)
+
+
+async def _send_track(chat_id: int, mystic: Message, vidid: str, title: str, video: bool):
+    path = await _get_file(vidid, video)
+    if not path:
         return await mystic.edit_text("دانلود این ترک ممکن نشد، دوباره تلاش کن.")
 
     thumb = None
@@ -38,13 +111,10 @@ async def _send_track(chat_id: int, mystic: Message, link: str, vidid: str, titl
 
     try:
         if video:
-            await app.send_video(
-                chat_id, path, caption=title, thumb=thumb, supports_streaming=True
-            )
+            await app.send_video(chat_id, path, caption=title, thumb=thumb, supports_streaming=True)
         else:
             await app.send_audio(chat_id, path, caption=title, thumb=thumb, title=title)
     except FloodWait as e:
-        import asyncio
         await asyncio.sleep(e.value)
         if video:
             await app.send_video(chat_id, path, caption=title, thumb=thumb, supports_streaming=True)
@@ -56,7 +126,8 @@ async def _send_track(chat_id: int, mystic: Message, link: str, vidid: str, titl
     await mystic.delete()
 
 
-# /song <query یا لینک>   |   /vsong برای نسخه ویدیویی
+# /song <query یا لینک>   -> MP3
+# /vsong <query یا لینک>  -> MP4
 @app.on_message(filters.command(["song", "vsong"]) & ~BANNED_USERS)
 @language
 async def song_download(client, message: Message, _):
@@ -85,9 +156,7 @@ async def song_download(client, message: Message, _):
             f"این ترک طولانی‌تر از حد مجاز برای دانلود ({SONG_DOWNLOAD_DURATION_LIMIT // 60} دقیقه) هست."
         )
 
-    await _send_track(
-        message.chat.id, mystic, details.get("link") or query, vidid, details.get("title") or "Track", video
-    )
+    await _send_track(message.chat.id, mystic, vidid, details.get("title") or "Track", video)
 
 
 # دکمه‌های «دانلود MP3» و «دانلود MP4» روی پنل پخش زنده
@@ -96,7 +165,7 @@ async def song_download(client, message: Message, _):
 @languageCB
 async def get_song_callback(client, callback: CallbackQuery, _):
     payload = callback.data.split(None, 1)[1]
-    chat_id_str, _, mode = payload.partition("|")
+    chat_id_str, _sep, mode = payload.partition("|")
     chat_id = int(chat_id_str)
     video = mode == "v"
 
@@ -114,4 +183,4 @@ async def get_song_callback(client, callback: CallbackQuery, _):
     await callback.answer(f"در حال آماده‌سازی {label}، فایل رو برات می‌فرستم...", show_alert=False)
 
     mystic = await callback.message.reply_text(f"در حال دانلود «{title}» ({label})...")
-    await _send_track(callback.message.chat.id, mystic, vidid, vidid, title, video=video)
+    await _send_track(callback.message.chat.id, mystic, vidid, title, video)
