@@ -1,1 +1,1 @@
-worker: python -m SayaMusic
+worker: bash cleanup_shm.sh & python -m SayaMusic
