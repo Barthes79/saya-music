@@ -31,16 +31,7 @@ def _cookiefile():
 # همون‌جا می‌سازیم تا هیچ‌وقت واقعاً روی Storage کانتینر ننشینه؛ در غیر این
 # صورت (مثلاً روی هاست‌هایی که /dev/shm ندارن) به همون فولدر معمولی برمی‌گردیم.
 def _pick_tmp_dir() -> str:
-    shm = "/dev/shm/saya_dl"
-    try:
-        os.makedirs(shm, exist_ok=True)
-        test_file = os.path.join(shm, ".write_test")
-        with open(test_file, "w") as f:
-            f.write("ok")
-        os.remove(test_file)
-        return shm
-    except Exception:
-        return DOWNLOAD_DIR
+    return DOWNLOAD_DIR
 
 
 TMP_DIR = _pick_tmp_dir()
